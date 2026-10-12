@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>测试脚本管理</title>
+<script src="admin-config.js"></script>
+<style>
+  * { box-sizing: border-box; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+  body { margin: 0; background: #f5f6f8; color: #333; }
+  .hidden { display: none !important; }
+
+  /* ============ 登录页（CREALITY 风格） ============ */
+  #login-view {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #5b4fc0 0%, #7a5fd0 55%, #9b7de0 100%);
+    padding: 24px;
+  }
+  .login-card {
+    width: 400px; background: #fff; border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(30,20,80,.25);
+    padding: 40px 40px 32px; text-align: center;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; }
+  .brand img.logo-img { height: 40px; width: auto; display: block; }
+  .login-title { font-size: 22px; font-weight: 700; margin: 22px 0 4px; color: #222; }
+  .login-sub { font-size: 13px; color: #aaa; margin-bottom: 24px; }
+  #login-view label { display: block; text-align: left; font-size: 13px; color: #666; margin: 14px 0 6px; }
+  #login-view input {
+    width: 100%; height: 42px; padding: 0 14px; border: 1px solid #e0e0e0;
+    border-radius: 8px; font-size: 14px; outline: none;
+  }
+  #login-view input:focus { border-color: #5b7cf9; }
+  #login-btn {
+    width: 100%; height: 44px; margin-top: 24px; border: none; border-radius: 8px;
+    background: linear-gradient(90deg, #5b7cf9, #7b9bfa); color: #fff; font-size: 16px;
+    cursor: pointer; letter-spacing: 4px;
+  }
+  #login-btn:hover { opacity: .92; }
+  #login-error { color: #e5484d; font-size: 13px; margin-top: 12px; min-height: 16px; }
+
+  /* ============ 管理页 ============ */
+  #admin-view { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header {
+    background: #fff; border-radius: 10px; padding: 14px 20px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .head-left { display: flex; align-items: center; gap: 14px; }
+  .head-left .brand-en { font-size: 17px; }
+  .sys-title { font-size: 17px; font-weight: 700; color: #222; }
+  .sys-sub { font-size: 12px; color: #aaa; }
+  .head-right { display: flex; align-items: center; gap: 14px; font-size: 13px; color: #666; }
+  #clock { color: #999; font-variant-numeric: tabular-nums; }
+
+  /* 按钮 */
+  .btn {
+    height: 34px; padding: 0 14px; border: 1px solid #dcdfe6; border-radius: 6px;
+    background: #fff; color: #333; cursor: pointer; font-size: 13px;
+  }
+  .btn:hover { border-color: #5b7cf9; color: #5b7cf9; }
+  .btn.blue { background: #5b7cf9; border-color: #5b7cf9; color: #fff; }
+  .btn.blue:hover { opacity: .9; color: #fff; }
+  .btn.green { background: #52c41a; border-color: #52c41a; color: #fff; }
+  .btn.green:hover { opacity: .9; color: #fff; }
+  .btn.red { color: #f5222d; border-color: #ffccc7; }
+  .btn.red:hover { border-color: #f5222d; color: #f5222d; }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 12px; margin-right: 6px; }
+
+  /* 工具栏 */
+  .toolbar {
+    background: #fff; border-radius: 10px; padding: 12px 20px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .toolbar select, .toolbar input.search {
+    height: 34px; padding: 0 12px; border: 1px solid #dcdfe6; border-radius: 6px; font-size: 13px; outline: none;
+  }
+  .toolbar select:focus, .toolbar input.search:focus { border-color: #5b7cf9; }
+  .toolbar input.search { width: 220px; margin-left: auto; }
+  #status { font-size: 13px; color: #999; margin-right: auto; }
+
+  /* 表格 */
+  .table-wrap {
+    background: #fff; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  th { background: #fafafa; color: #666; font-weight: 600; }
+  tbody tr:hover { background: #fafbff; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  tbody tr:nth-child(even):hover { background: #f4f6ff; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+  .badge.on { background: #e7f7ec; color: #1a9c5b; }
+  .badge.off { background: #fdecec; color: #d64545; }
+  .cell-file { color: #999; font-size: 12px; }
+
+  /* 新增项目 */
+  #add-row {
+    background: #fff; border-radius: 10px; padding: 16px 20px; margin-top: 14px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  #add-row input[type=text] {
+    width: 220px; height: 34px; padding: 0 12px; border: 1px solid #dcdfe6;
+    border-radius: 6px; font-size: 13px; outline: none;
+  }
+  #add-row input[type=text]:focus { border-color: #5b7cf9; }
+  .file-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ================= 登录页 ================= -->
+<div id="login-view">
+  <div class="login-card">
+    <div class="brand">
+      <img class="logo-img" src="admin-logo.png" alt="创想三维">
+    </div>
+    <div class="login-title">测试脚本管理</div>
+    <div class="login-sub">Script Management System</div>
+    <label for="login-user">用户名</label>
+    <input id="login-user" type="text" autocomplete="username" placeholder="请输入用户名">
+    <label for="login-pass">密码</label>
+    <input id="login-pass" type="password" autocomplete="current-password" placeholder="请输入密码">
+    <button id="login-btn">登 录</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ================= 管理页 ================= -->
+<div id="admin-view" class="hidden">
+  <header>
+    <div class="head-left">
+      <div class="brand">
+        <img class="logo-img" src="admin-logo.png" alt="创想三维">
+      </div>
+      <div>
+        <div class="sys-title">测试脚本管理</div>
+        <div class="sys-sub">Script Management System</div>
+      </div>
+    </div>
+    <div class="head-right">
+      <span>当前登录：<b id="login-user-label"></b></span>
+      <span id="clock"></span>
+      <button id="logout-btn" class="btn sm">退出登录</button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <select id="status-filter">
+      <option value="all">状态：全部</option>
+      <option value="on">启用</option>
+      <option value="off">停用</option>
+    </select>
+    <button id="refresh-btn" class="btn blue">刷新</button>
+    <input class="search" id="search" placeholder="搜索项目名">
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:56px">序号</th>
+          <th style="width:130px">项目名</th>
+          <th style="width:110px">脚本文件</th>
+          <th style="width:70px">版本</th>
+          <th style="width:80px">状态</th>
+          <th style="width:170px">更新时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="item-list"><tr><td colspan="7" style="color:#999;text-align:center">加载中…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div id="add-row">
+    <input type="text" id="new-name" placeholder="新项目名（如 L015）">
+    <input type="file" id="new-file" class="file-input" accept=".json">
+    <button class="btn" id="new-pick-btn">选择 JSON 文件</button>
+    <button class="btn green" id="new-upload-btn">新增项目</button>
+    <span id="status"></span>
+  </div>
+</div>
+
+<script>
+const CFG = window.ADMIN_CONFIG;
+const API = `https://gitee.com/api/v5/repos/${CFG.owner}/${CFG.repo}/contents`;
+const MANIFEST_PATH = "scripts/manifest.json";
+
+let manifestSha = null;   // 当前 manifest 文件的 sha，写回时使用
+let items = [];           // manifest.items 的内存缓存
+
+// ---------- 登录 ----------
+function doLogin() {
+  const u = document.getElementById("login-user").value.trim();
+  const p = document.getElementById("login-pass").value;
+  const found = (CFG.users || []).find(x => x.user === u && x.pass === p);
+  if (!found) {
+    document.getElementById("login-error").textContent = "账号或密码错误";
+    return;
+  }
+  document.getElementById("login-error").textContent = "";
+  document.getElementById("login-view").classList.add("hidden");
+  document.getElementById("admin-view").classList.remove("hidden");
+  document.getElementById("login-user-label").textContent = u;
+  loadManifest();
+}
+
+// ---------- Gitee API ----------
+async function giteeGet(path) {
+  const res = await fetch(`${API}/${path}?access_token=${encodeURIComponent(CFG.token)}`);
+  if (res.status === 404) return null;          // 文件不存在
+  if (!res.ok) throw new Error(`GET ${path}: HTTP ${res.status}`);
+  const data = await res.json();
+  // Gitee 对不存在的路径返回 200 + 空数组 []（而非 404）；只有带 content 的对象才是文件
+  if (Array.isArray(data) || !data || !data.content) return null;
+  return data;
+}
+
+async function giteeWrite(method, path, body) {
+  const params = new URLSearchParams();
+  for (const k in body) params.set(k, body[k]);
+  const res = await fetch(`${API}/${path}`, {
+    method,
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    body: params.toString()
+  });
+  if (!res.ok) throw new Error(`${method} ${path}: HTTP ${res.status} ${await res.text()}`);
+  return await res.json();
+}
+
+async function giteeDelete(path, sha) {
+  const q = new URLSearchParams({
+    access_token: CFG.token, sha: sha, branch: CFG.branch,
+    message: "delete " + path.split("/").pop()
+  });
+  const res = await fetch(`${API}/${path}?${q.toString()}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`DELETE ${path}: HTTP ${res.status} ${await res.text()}`);
+}
+
+// ---------- 编码 ----------
+function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
+function base64ToUtf8(b64) {
+  // Gitee 返回的 base64 带换行/空白，atob 不认，先全部去掉
+  const clean = String(b64).replace(/\s+/g, '');
+  return decodeURIComponent(escape(atob(clean)));
+}
+function nowStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+// ---------- 清单 ----------
+async function loadManifest() {
+  setStatus("加载中…");
+  try {
+    const data = await giteeGet(MANIFEST_PATH);
+    if (!data) {
+      manifestSha = null;
+      items = [];
+    } else {
+      manifestSha = data.sha;
+      const obj = JSON.parse(base64ToUtf8(data.content));
+      items = obj.items || [];
+    }
+    render();
+    setStatus(`${items.length} 个项目`);
+  } catch (e) {
+    setStatus("加载失败：" + e.message);
+    alert("加载清单失败：" + e.message);
+  }
+}
+
+async function saveManifest() {
+  const content = JSON.stringify({ index: Date.now(), items: items }, null, 2);
+  const body = { access_token: CFG.token, content: utf8ToBase64(content),
+                 message: "update manifest", branch: CFG.branch };
+  if (manifestSha) body.sha = manifestSha;
+  const r = await giteeWrite(manifestSha ? "PUT" : "POST", MANIFEST_PATH, body);
+  manifestSha = r.content ? r.content.sha : manifestSha;
+}
+
+function render() {
+  const keyword = document.getElementById("search").value.trim().toLowerCase();
+  const statusFilter = document.getElementById("status-filter").value;
+  const tbody = document.getElementById("item-list");
+  tbody.innerHTML = "";
+
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#999;text-align:center">暂无项目，请在下方新增。</td></tr>';
+    return;
+  }
+
+  items.forEach((it, idx) => {
+    // 搜索 + 状态过滤
+    if (keyword && !(it.name.toLowerCase().includes(keyword) || it.file.toLowerCase().includes(keyword))) return;
+    if (statusFilter === "on" && !it.enabled) return;
+    if (statusFilter === "off" && it.enabled) return;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td><b>${it.name}</b></td>
+      <td class="cell-file">${it.file}</td>
+      <td>v${it.version ?? 0}</td>
+      <td><span class="badge ${it.enabled ? "on" : "off"}">${it.enabled ? "启用" : "停用"}</span></td>
+      <td>${it.updated || "-"}</td>
+      <td></td>`;
+    const td = tr.children[6];
+
+    const toggle = btnSm(it.enabled ? "停用" : "启用", async () => {
+      it.enabled = !it.enabled; await saveManifest(); render();
+    });
+    const upBtn = btnSm("上传新版本", () => pickFile(content => uploadScript(it, content)), "blue");
+    const delBtn = btnSm("删除", async () => {
+      if (!confirm(`确认删除项目「${it.name}」及其脚本？`)) return;
+      try {
+        const f = await giteeGet(`scripts/${it.file}`);
+        if (f) await giteeDelete(`scripts/${it.file}`, f.sha);
+        items.splice(idx, 1); await saveManifest(); render();
+        setStatus("已删除 " + it.name);
+      } catch (e) { alert("删除失败：" + e.message); }
+    }, "red");
+
+    td.appendChild(toggle); td.appendChild(upBtn); td.appendChild(delBtn);
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- 上传 ----------
+async function uploadScript(item, fileContent) {
+  const path = `scripts/${item.file}`;
+  try {
+    const existing = await giteeGet(path);
+    const body = { access_token: CFG.token, content: utf8ToBase64(fileContent),
+                   message: `update ${item.name} script`, branch: CFG.branch };
+    if (existing) body.sha = existing.sha;
+    await giteeWrite(existing ? "PUT" : "POST", path, body);
+    item.version = (item.version ?? 0) + 1;
+    item.updated = nowStr();
+    item.enabled = true;
+    await saveManifest();
+    render();
+    setStatus("已上传 " + item.name + " v" + item.version);
+    alert("上传成功：" + item.name + " v" + item.version);
+  } catch (e) { alert("上传失败：" + e.message); }
+}
+
+function pickFile(cb) {
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = ".json";
+  input.onchange = () => {
+    const f = input.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => cb(reader.result);
+    reader.readAsText(f, "utf-8");
+  };
+  input.click();
+}
+
+function btnSm(text, onClick, cls) {
+  const b = document.createElement("button");
+  b.className = "btn sm" + (cls ? " " + cls : "");
+  b.textContent = text;
+  b.onclick = onClick;
+  return b;
+}
+
+function setStatus(s) { document.getElementById("status").textContent = s; }
+
+// ---------- 新增项目 ----------
+function setupAdd() {
+  let pickedContent = null;
+  document.getElementById("new-pick-btn").onclick = () => pickFile(c => { pickedContent = c; setStatus("已选择文件"); });
+  document.getElementById("new-upload-btn").onclick = async () => {
+    const name = document.getElementById("new-name").value.trim();
+    if (!name) { alert("请输入项目名"); return; }
+    if (!pickedContent) { alert("请先选择 JSON 文件"); return; }
+    const file = name + ".json";
+    if (items.find(x => x.name === name)) { alert("项目已存在"); return; }
+    try {
+      const body = { access_token: CFG.token, content: utf8ToBase64(pickedContent),
+                     message: `add ${name} script`, branch: CFG.branch };
+      await giteeWrite("POST", `scripts/${file}`, body);
+      items.push({ name, file, version: 1, enabled: true, updated: nowStr() });
+      await saveManifest();
+      render();
+      document.getElementById("new-name").value = "";
+      pickedContent = null;
+      setStatus("已新增 " + name);
+      alert("新增成功：" + name + " v1");
+    } catch (e) { alert("新增失败：" + e.message); }
+  };
+}
+
+// ---------- 初始化 ----------
+document.getElementById("login-btn").onclick = doLogin;
+document.getElementById("login-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+document.getElementById("refresh-btn").onclick = loadManifest;
+document.getElementById("logout-btn").onclick = () => location.reload();
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("status-filter").addEventListener("change", render);
+
+// 头部时钟
+function tick() { document.getElementById("clock").textContent = nowStr(); }
+tick();
+setInterval(tick, 1000);
+
+setupAdd();
+</script>
+</body>
+</html>
