@@ -277,11 +277,22 @@ async function loadManifest() {
 
 async function saveManifest() {
   const content = JSON.stringify({ index: Date.now(), items: items }, null, 2);
-  const body = { access_token: CFG.token, content: utf8ToBase64(content),
-                 message: "update manifest", branch: CFG.branch };
-  if (manifestSha) body.sha = manifestSha;
-  const r = await giteeWrite(manifestSha ? "PUT" : "POST", MANIFEST_PATH, body);
-  manifestSha = r.content ? r.content.sha : manifestSha;
+  // 每次写前重新拉取 manifest 当前 sha，避免页面缓存的 sha 过期导致 "Blob SHA does not match"
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const fresh = await giteeGet(MANIFEST_PATH);
+    const sha = fresh ? fresh.sha : (manifestSha || null);
+    const body = { access_token: CFG.token, content: utf8ToBase64(content),
+                   message: "update manifest", branch: CFG.branch };
+    if (sha) body.sha = sha;
+    try {
+      const r = await giteeWrite(sha ? "PUT" : "POST", MANIFEST_PATH, body);
+      manifestSha = r.content ? r.content.sha : sha;
+      return;
+    } catch (e) {
+      // 并发/竞态导致的 sha 失配：重拉一次再试
+      if (!/does not match|Blob SHA/i.test(e.message) || attempt >= 3) throw e;
+    }
+  }
 }
 
 function render() {
